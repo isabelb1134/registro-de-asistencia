@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FF5E00">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Servicio Cultural · Registro de Asistencia</title>
+<style>
+  :root{
+    --o1:#FF5E00; --o2:#FF6B00; --o-soft:#FFF1E8; --o-dark:#D94F00;
+    --ink:#1E293B; --muted:#64748B; --line:#E2E8F0; --bg:#FFF7F2;
+    --ok:#16A34A; --danger:#DC2626; --r:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink); background:var(--bg);
+    -webkit-user-select:none; user-select:none; overscroll-behavior:none;
+  }
+  .app{
+    height:100dvh; display:flex; flex-direction:column;
+    max-width:900px; margin:0 auto;
+    padding:max(10px,env(safe-area-inset-top)) 14px max(12px,env(safe-area-inset-bottom));
+    gap:10px;
+  }
+  /* Header */
+  header{
+    position:relative; background:linear-gradient(135deg,var(--o1),var(--o2));
+    color:#fff; border-radius:var(--r); padding:14px 16px;
+    display:flex; align-items:center; gap:14px;
+    box-shadow:0 8px 22px rgba(255,94,0,.28);
+  }
+  .logo{width:52px;height:52px;flex:none;background:rgba(255,255,255,.18);border-radius:14px;display:grid;place-items:center}
+  .logo svg{width:36px;height:36px}
+  header h1{margin:0;font-size:clamp(20px,4.6vw,30px);line-height:1.1;font-weight:800;letter-spacing:-.01em}
+  header p{margin:2px 0 0;font-size:clamp(13px,2.8vw,17px);opacity:.92;font-weight:500}
+  .lock-btn{
+    position:absolute; top:8px; right:8px;
+    background:rgba(255,255,255,.16); border:0; color:#fff;
+    width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
+    cursor:pointer; opacity:.75;
+  }
+  .lock-btn:active{opacity:1;transform:scale(.95)}
+  .lock-btn svg{width:18px;height:18px}
+  .lock-btn .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  /* Event */
+  .event{
+    background:#fff; border-radius:var(--r); padding:10px 16px;
+    border-left:6px solid var(--o1); box-shadow:0 2px 10px rgba(30,41,59,.06);
+  }
+  .event small{display:block;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .event strong{display:block;font-size:clamp(19px,4.4vw,28px);font-weight:800;line-height:1.15;word-break:break-word}
+
+  /* Card */
+  .card{
+    flex:1; min-height:0; background:#fff; border-radius:var(--r);
+    padding:14px; display:flex; flex-direction:column; gap:10px;
+    box-shadow:0 2px 14px rgba(30,41,59,.07);
+  }
+  .id-box{
+    width:100%; font:inherit; font-size:clamp(26px,6.5vw,44px); font-weight:800;
+    letter-spacing:.08em; text-align:center; color:var(--ink);
+    border:3px solid var(--line); border-radius:16px; padding:10px 12px;
+    background:#fff; outline:none; caret-color:transparent;
+    font-variant-numeric:tabular-nums;
+  }
+  .id-box::placeholder{color:#B8C2D0;letter-spacing:.02em;font-weight:600}
+  .id-box.filled{border-color:var(--o1);background:var(--o-soft)}
+  .id-box.shake{animation:shake .35s;border-color:var(--danger)}
+  @keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  .hint{margin:-2px 0 0;text-align:center;color:var(--muted);font-size:clamp(12px,2.6vw,15px);line-height:1.3}
+  .mode-tag{align-self:center;font-size:12px;font-weight:700;color:var(--o-dark);background:var(--o-soft);padding:3px 10px;border-radius:99px}
+
+  /* Keypads */
+  .pad{flex:1;min-height:0;display:grid;gap:8px}
+  .pad.num{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr)}
+  .pad.alpha{grid-template-rows:repeat(5,1fr)}
+  .row{display:flex;gap:6px;justify-content:center;min-height:0}
+  .row .k{flex:1 1 0;max-width:calc((100% - 54px)/10)}
+  .row .k.wide{max-width:none;flex:2 1 0}
+  .k{
+    font:inherit; border:0; border-radius:14px; background:#F1F5F9; color:var(--ink);
+    font-size:clamp(24px,5.5vw,38px); font-weight:700; cursor:pointer;
+    box-shadow:0 3px 0 #CBD5E1; min-height:44px; touch-action:manipulation;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .pad.alpha .k{font-size:clamp(16px,3.8vw,28px);border-radius:10px;padding:0}
+  .k:active{transform:translateY(3px);box-shadow:0 0 0 #CBD5E1;background:#E2E8F0}
+  .k.fn{background:#FFE4D1;color:var(--o-dark);box-shadow:0 3px 0 #FFC59E;font-size:clamp(14px,3.2vw,20px)}
+  .k.fn:active{background:#FFD4B5}
+  .k.toggle{font-size:clamp(13px,2.9vw,18px);line-height:1.15;padding:4px 6px;text-align:center}
+  .k svg{width:1.1em;height:1.1em}
+  .submit{
+    font:inherit; border:0; border-radius:16px; cursor:pointer;
+    background:linear-gradient(135deg,var(--o1),var(--o2)); color:#fff;
+    font-size:clamp(20px,4.8vw,30px); font-weight:800; padding:clamp(14px,2.6vh,22px);
+    box-shadow:0 5px 0 var(--o-dark),0 10px 24px rgba(255,94,0,.3);
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    touch-action:manipulation;
+  }
+  .submit:active{transform:translateY(4px);box-shadow:0 1px 0 var(--o-dark)}
+  .submit:disabled{opacity:.6}
+  .submit svg{width:1em;height:1em}
+
+  /* Toast */
+  .toast{
+    position:fixed; left:50%; top:max(18px,env(safe-area-inset-top)); z-index:60;
+    transform:translate(-50%,-160%); transition:transform .3s cubic-bezier(.2,.9,.3,1.2);
+    background:var(--ok); color:#fff; border-radius:18px; padding:16px 22px;
+    display:flex; align-items:center; gap:14px; width:min(92vw,560px);
+    box-shadow:0 14px 34px rgba(22,163,74,.38);
+  }
+  .toast.show{transform:translate(-50%,0)}
+  .toast.err{background:var(--danger);box-shadow:0 14px 34px rgba(220,38,38,.35)}
+  .toast .ic{width:44px;height:44px;flex:none;border-radius:50%;background:rgba(255,255,255,.22);display:grid;place-items:center}
+  .toast .ic svg{width:28px;height:28px}
+  .toast b{display:block;font-size:clamp(18px,4vw,24px)}
+  .toast span{font-size:clamp(14px,3.2vw,18px);word-break:break-all}
+
+  /* Admin panel (bottom sheet) */
+  .sheet-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sheet-bg.show{opacity:1;pointer-events:auto}
+  .admin{
+    position:fixed; left:0; right:0; bottom:0; z-index:31;
+    max-width:900px; margin:0 auto; background:#fff;
+    border-radius:24px 24px 0 0; padding:18px 18px max(18px,env(safe-area-inset-bottom));
+    transform:translateY(105%); transition:transform .28s ease;
+    box-shadow:0 -10px 30px rgba(15,23,42,.2); max-height:88dvh; overflow:auto;
+  }
+  .admin.show{transform:translateY(0)}
+  .admin h2{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:8px}
+  .admin h2 svg{width:20px;height:20px;color:var(--o1)}
+  .admin .sub{margin:0 0 14px;color:var(--muted);font-size:14px}
+  .field{display:flex;gap:8px;margin-bottom:14px}
+  .field label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+  .txt{
+    flex:1; font:inherit; font-size:18px; padding:12px 14px; border:2px solid var(--line);
+    border-radius:12px; outline:none; color:var(--ink); min-width:0; -webkit-user-select:text; user-select:text;
+  }
+  .txt:focus{border-color:var(--o1)}
+  .btn{
+    font:inherit; font-weight:700; font-size:16px; border:0; border-radius:12px;
+    padding:12px 16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    touch-action:manipulation;
+  }
+  .btn svg{width:20px;height:20px;flex:none}
+  .btn.pri{background:var(--o1);color:#fff}
+  .btn.sec{background:#F1F5F9;color:var(--ink)}
+  .btn.dan{background:#FEE2E2;color:var(--danger)}
+  .btn.dark{background:var(--ink);color:#fff}
+  .btn:active{filter:brightness(.92)}
+  .grid-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid-btns .full{grid-column:1/-1;padding:16px;font-size:18px}
+  .count{font-weight:800;color:var(--o-dark)}
+
+  /* Modals */
+  .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:50;display:none;align-items:center;justify-content:center;padding:16px}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:22px;width:min(100%,420px);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.3);max-height:92dvh;display:flex;flex-direction:column}
+  .modal.wide{width:min(100%,820px)}
+  .modal h3{margin:0 0 6px;font-size:20px}
+  .modal p{margin:0 0 14px;color:var(--muted)}
+  .modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  .modal .acts .btn{flex:1}
+  .pin-dots{display:flex;justify-content:center;gap:14px;margin:6px 0 14px}
+  .pin-dots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--o1);display:block}
+  .pin-dots i.on{background:var(--o1)}
+  .pin-dots.bad{animation:shake .35s}
+  .pin-dots.bad i{border-color:var(--danger)}
+  .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .pin-pad .k{height:58px;font-size:26px}
+  .pin-err{text-align:center;color:var(--danger);font-weight:700;min-height:20px;margin:-6px 0 8px;font-size:14px}
+  .tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;flex:1;min-height:120px}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{position:sticky;top:0;background:var(--o-soft);color:var(--o-dark);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+  td.id{font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.03em}
+  td .del{background:#FEE2E2;color:var(--danger);border:0;border-radius:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer}
+  td .del svg{width:18px;height:18px}
+  .empty{padding:30px;text-align:center;color:var(--muted)}
+  .hidden{display:none!important}
+
+  @media (min-width:700px){
+    .app{padding-left:24px;padding-right:24px;gap:14px}
+    .card{padding:20px;gap:14px}
+    .pad{gap:12px}
+    .pad.num{max-width:620px;width:100%;margin:0 auto}
+  }
+  @media (max-height:640px){
+    header{padding:10px 14px}
+    .logo{width:42px;height:42px}
+    .hint{display:none}
+    .mode-tag{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <!-- Máscaras de teatro -->
+      <svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 8c6 3 14 3 20 0v13c0 7-4.5 12-10 12S5 28 5 21V8z" fill="rgba(255,255,255,.18)"/>
+        <path d="M10 16.5l3 1M17 17.5l3-1"/>
+        <path d="M10.5 24c2.5 2.6 6.5 2.6 9 0"/>
+        <path d="M23 17c6 3 14 3 20 0v13c0 7-4.5 12-10 12-3.6 0-6.8-2.1-8.6-5.4" fill="rgba(255,255,255,.32)"/>
+        <path d="M28 25l3 1M35 26l3-1"/>
+        <path d="M29 35c2.5-2.6 6.5-2.6 9 0"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Servicio Cultural</h1>
+      <p>Registro de Asistencia</p>
+    </div>
+    <button class="lock-btn" id="lockBtn" title="Modo Admin" aria-label="Modo Admin">
+      <svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span class="lbl">Modo Admin</span>
+    </button>
+  </header>
+
+  <div class="event">
+    <small>Evento</small>
+    <strong id="eventName">Taller de Teatro</strong>
+  </div>
+
+  <main class="card">
+    <input id="idBox" class="id-box" type="text" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" readonly placeholder="Ingresa tu DNI" aria-label="Documento de identidad">
+    <p class="hint">¿Carnet de Extranjería o Pasaporte? Usa el botón de abajo para cambiar a letras.</p>
+
+    <div class="pad num" id="padNum"></div>
+    <div class="pad alpha hidden" id="padAlpha"></div>
+
+    <button class="submit" id="submitBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      Registrar Asistencia
+    </button>
+  </main>
+</div>
+
+<!-- Confirmación -->
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <div class="ic" id="toastIc"></div>
+  <div><b id="toastTitle"></b><span id="toastMsg"></span></div>
+</div>
+
+<!-- Panel Admin -->
+<div class="sheet-bg" id="sheetBg"></div>
+<section class="admin" id="admin" aria-label="Panel de administración">
+  <h2>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.9-1"/></svg>
+    Panel de Administración
+  </h2>
+  <p class="sub">Registros guardados: <span class="count" id="count">0</span></p>
+
+  <label for="eventInput" style="display:block;font-weight:700;font-size:14px;margin-bottom:6px">Editar Nombre del Evento</label>
+  <div class="field">
+    <input id="eventInput" class="txt" type="text" maxlength="80" placeholder="Ej.: Cine Club">
+    <button class="btn pri" id="saveEvent">Guardar</button>
+  </div>
+
+  <div class="grid-btns">
+    <button class="btn sec" id="btnCsv">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+      Descargar Excel (.xlsx)
+    </button>
+    <button class="btn sec" id="btnList">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Ver Lista
+    </button>
+    <button class="btn dan" id="btnClear">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg>
+      Borrar Todo
+    </button>
+    <button class="btn sec" id="btnClose">Cerrar panel</button>
+    <button class="btn dark full" id="btnLock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      Bloquear Pantalla (Modo Kiosco)
+    </button>
+  </div>
+</section>
+
+<!-- PIN -->
+<div class="modal-bg" id="pinModal">
+  <div class="modal">
+    <h3>Modo Admin</h3>
+    <p>Ingresa el PIN de 4 dígitos.</p>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <div class="acts"><button class="btn sec" id="pinCancel">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- Lista -->
+<div class="modal-bg" id="listModal">
+  <div class="modal wide">
+    <h3>Lista de Asistencia</h3>
+    <p id="listSub"></p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Evento</th><th>Documento / ID</th><th>Fecha</th><th>Hora</th><th></th></tr></thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+    <div class="acts"><button class="btn pri" id="listClose">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Confirmación genérica -->
+<div class="modal-bg" id="confModal">
+  <div class="modal">
+    <h3 id="confTitle"></h3>
+    <p id="confText"></p>
+    <div class="acts">
+      <button class="btn sec" id="confNo">Cancelar</button>
+      <button class="btn dan" id="confYes">Sí, borrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var PIN = '1234';
+  var K_EVENT = 'sc_evento_nombre';
+  var K_RECS  = 'sc_registros';
+  var DEFAULT_EVENT = 'Taller de Teatro';
+  var MAX_LEN = 20;
+
+  /* ---------- Almacenamiento seguro ---------- */
+  var mem = {};
+  function sGet(k){ try{ var v = localStorage.getItem(k); return v === null ? (k in mem ? mem[k] : null) : v; }catch(e){ return k in mem ? mem[k] : null; } }
+  function sSet(k,v){ mem[k]=v; try{ localStorage.setItem(k,v); }catch(e){} }
+  function sDel(k){ delete mem[k]; try{ localStorage.removeItem(k); }catch(e){} }
+
+  function getRecs(){
+    try{ var a = JSON.parse(sGet(K_RECS) || '[]'); return Array.isArray(a) ? a : []; }catch(e){ return []; }
+  }
+  function setRecs(a){ sSet(K_RECS, JSON.stringify(a)); }
+  function getEvent(){ var v = sGet(K_EVENT); return v === null ? DEFAULT_EVENT : v; }
+
+  /* ---------- Estado ---------- */
+  var $ = function(id){ return document.getElementById(id); };
+  var idValue = '';           // SIEMPRE string: preserva ceros a la izquierda
+  var mode = 'num';
+  var unlocked = false;
+  var busy = false;
+
+  var ICON_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9l-6 6M11 9l6 6"/></svg>';
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  var ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 17h.01"/></svg>';
+  var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg>';
+  var ICON_LOCK = '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>';
+  var ICON_UNLOCK = '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.9-1"/>';
+
+  function key(label, cls, act){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'k' + (cls ? ' ' + cls : '');
+    b.innerHTML = label;
+    b.dataset.act = act;
+    return b;
+  }
+
+  /* ---------- Teclado numérico ---------- */
+  (function buildNum(){
+    var p = $('padNum');
+    '123456789'.split('').forEach(function(d){ p.appendChild(key(d,'', 'c:'+d)); });
+    p.appendChild(key('¿Pasaporte?<br>(Usar Letras)','fn toggle','toggle'));
+    p.appendChild(key('0','', 'c:0'));
+    p.appendChild(key(ICON_BACK+' Borrar','fn','back'));
+  })();
+
+  /* ---------- Teclado alfanumérico ---------- */
+  (function buildAlpha(){
+    var p = $('padAlpha');
+    var rows = ['1234567890','QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+    rows.forEach(function(r, i){
+      var row = document.createElement('div'); row.className = 'row';
+      r.split('').forEach(function(c){ row.appendChild(key(c,'', 'c:'+c)); });
+      if(i === 3){ row.appendChild(key(ICON_BACK,'fn wide','back')); }
+      p.appendChild(row);
+    });
+    var last = document.createElement('div'); last.className = 'row';
+    var t = key('Volver a Números (DNI)','fn toggle wide','toggle'); t.style.maxWidth = 'none';
+    last.appendChild(t);
+    p.appendChild(last);
+  })();
+
+  function onPad(e){
+    var b = e.target.closest('.k'); if(!b || busy) return;
+    var act = b.dataset.act;
+    if(act === 'toggle') setMode(mode === 'num' ? 'alpha' : 'num');
+    else if(act === 'back') backspace();
+    else if(act.indexOf('c:') === 0) addChar(act.slice(2));
+  }
+  $('padNum').addEventListener('click', onPad);
+  $('padAlpha').addEventListener('click', onPad);
+
+  function setMode(m){
+    mode = m;
+    $('padNum').classList.toggle('hidden', m !== 'num');
+    $('padAlpha').classList.toggle('hidden', m !== 'alpha');
+    $('idBox').placeholder = m === 'num' ? 'Ingresa tu DNI' : 'Ingresa tu documento';
+  }
+  function render(){
+    var box = $('idBox');
+    box.value = idValue;
+    box.classList.toggle('filled', idValue.length > 0);
+  }
+  function addChar(c){
+    if(idValue.length >= MAX_LEN) return;
+    idValue = idValue + String(c).toUpperCase();   // concatenación de texto, nunca numérica
+    render();
+  }
+  function backspace(){ idValue = idValue.slice(0,-1); render(); }
+
+  /* ---------- Teclado físico ---------- */
+  document.addEventListener('keydown', function(e){
+    var anyModal = document.querySelector('.modal-bg.show');
+    if($('pinModal').classList.contains('show')){
+      if(/^[0-9]$/.test(e.key)){ pinAdd(e.key); e.preventDefault(); }
+      else if(e.key === 'Backspace'){ pin = pin.slice(0,-1); pinRender(); e.preventDefault(); }
+      else if(e.key === 'Escape'){ closePin(); }
+      return;
+    }
+    if(anyModal){ if(e.key === 'Escape') anyModal.classList.remove('show'); return; }
+    if(document.activeElement && document.activeElement.id === 'eventInput') return;
+    if($('admin').classList.contains('show')) return;
+    if(e.ctrlKey || e.metaKey || e.altKey || busy) return;
+    if(e.key === 'Enter'){ e.preventDefault(); submit(); return; }
+    if(e.key === 'Backspace'){ e.preventDefault(); backspace(); return; }
+    if(/^[0-9]$/.test(e.key)){ e.preventDefault(); addChar(e.key); return; }
+    if(/^[a-zA-Z]$/.test(e.key)){
+      e.preventDefault();
+      if(mode !== 'alpha') setMode('alpha');
+      addChar(e.key);
+    }
+  });
+
+  /* ---------- Fecha / hora ---------- */
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+  function fmtDate(d){ return pad2(d.getDate()) + '/' + pad2(d.getMonth()+1) + '/' + d.getFullYear(); }
+  function fmtTime(d){ return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds()); }
+  function fmtISO(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+
+  /* ---------- Aviso ---------- */
+  var toastTimer;
+  function toast(title, msg, isErr, ms){
+    $('toast').classList.toggle('err', !!isErr);
+    $('toastIc').innerHTML = isErr ? ICON_X : ICON_CHECK;
+    $('toastTitle').textContent = title;
+    $('toastMsg').textContent = msg || '';
+    $('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ $('toast').classList.remove('show'); }, ms || 2000);
+  }
+
+  /* ---------- Registro ---------- */
+  function submit(){
+    if(busy) return;
+    var id = String(idValue).trim();
+    if(!id){
+      var box = $('idBox');
+      box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+      setTimeout(function(){ box.classList.remove('shake'); }, 400);
+      toast('Falta tu documento', 'Ingresa tu DNI o documento antes de registrar.', true, 2000);
+      return;
+    }
+    var now = new Date();
+    var rec = {
+      uid: now.getTime().toString(36) + Math.random().toString(36).slice(2,7),
+      evento: getEvent() || 'Servicio Cultural',
+      documento: id,             // string
+      fecha: fmtDate(now),
+      hora: fmtTime(now)
+    };
+    var recs = getRecs(); recs.push(rec); setRecs(recs);
+    updateCount();
+
+    busy = true;
+    $('submitBtn').disabled = true;
+    toast('¡Asistencia registrada!', 'Documento: ' + id, false, 2000);
+    setTimeout(function(){
+      idValue = ''; render(); setMode('num');
+      busy = false; $('submitBtn').disabled = false;
+    }, 2000);
+  }
+  $('submitBtn').addEventListener('click', submit);
+
+  /* ---------- Evento ---------- */
+  function renderEvent(){
+    var n = getEvent();
+    $('eventName').textContent = n || 'Servicio Cultural';
+    $('eventInput').value = n;
+  }
+  $('saveEvent').addEventListener('click', function(){
+    var v = $('eventInput').value.replace(/\s+/g,' ').trim();
+    sSet(K_EVENT, v);
+    renderEvent();
+    $('eventInput').blur();
+    toast('Evento guardado', v || 'Servicio Cultural', false, 1600);
+  });
+  $('eventInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') $('saveEvent').click(); });
+
+  /* ---------- PIN ---------- */
+  var pin = '';
+  (function buildPin(){
+    var p = $('pinPad');
+    '123456789'.split('').forEach(function(d){ p.appendChild(key(d,'', 'p:'+d)); });
+    p.appendChild(document.createElement('span'));
+    p.appendChild(key('0','', 'p:0'));
+    p.appendChild(key(ICON_BACK,'fn','pback'));
+    p.addEventListener('click', function(e){
+      var b = e.target.closest('.k'); if(!b) return;
+      if(b.dataset.act === 'pback'){ pin = pin.slice(0,-1); pinRender(); }
+      else pinAdd(b.dataset.act.slice(2));
+    });
+  })();
+  function pinRender(){
+    var dots = $('pinDots').children;
+    for(var i=0;i<4;i++) dots[i].classList.toggle('on', i < pin.length);
+  }
+  function pinAdd(d){
+    if(pin.length >= 4) return;
+    pin += d; pinRender(); $('pinErr').textContent = '';
+    if(pin.length === 4){
+      setTimeout(function(){
+        if(pin === PIN){ closePin(); setUnlocked(true); openAdmin(); }
+        else{
+          $('pinErr').textContent = 'PIN incorrecto';
+          var dd = $('pinDots'); dd.classList.add('bad');
+          setTimeout(function(){ dd.classList.remove('bad'); pin=''; pinRender(); }, 450);
+        }
+      }, 120);
+    }
+  }
+  function openPin(){ pin=''; pinRender(); $('pinErr').textContent=''; $('pinModal').classList.add('show'); }
+  function closePin(){ pin=''; pinRender(); $('pinModal').classList.remove('show'); }
+  $('pinCancel').addEventListener('click', closePin);
+
+  /* ---------- Admin ---------- */
+  function setUnlocked(v){
+    unlocked = v;
+    $('lockIcon').innerHTML = v ? ICON_UNLOCK : ICON_LOCK;
+  }
+  function openAdmin(){
+    renderEvent(); updateCount();
+    $('sheetBg').classList.add('show'); $('admin').classList.add('show');
+  }
+  function closeAdmin(){ $('sheetBg').classList.remove('show'); $('admin').classList.remove('show'); }
+  function lockKiosk(){
+    closeAdmin();
+    document.querySelectorAll('.modal-bg.show').forEach(function(m){ m.classList.remove('show'); });
+    setUnlocked(false);
+    idValue=''; render(); setMode('num');
+    toast('Pantalla bloqueada', 'Modo Kiosco activado', false, 1500);
+  }
+  $('lockBtn').addEventListener('click', function(){ unlocked ? openAdmin() : openPin(); });
+  $('btnClose').addEventListener('click', closeAdmin);
+  $('sheetBg').addEventListener('click', closeAdmin);
+  $('btnLock').addEventListener('click', lockKiosk);
+  function updateCount(){ $('count').textContent = getRecs().length; }
+
+  /* ---------- Excel (.xlsx real, sin librerías) ---------- */
+  /*XLSX-START*/
+  var CRC_T = (function(){ var t = [], c, n, k; for(n=0;n<256;n++){ c=n; for(k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+  function crc32(b){ var c = 0xFFFFFFFF; for(var i=0;i<b.length;i++) c = CRC_T[(c^b[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+  function utf8(s){ return new TextEncoder().encode(s); }
+  function zip(files){ // files: [{name, data:Uint8Array}] — ZIP sin compresión
+    var parts = [], central = [], off = 0;
+    var d = new Date();
+    var dt = ((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+    var tm = (d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+    files.forEach(function(f){
+      var nm = utf8(f.name), data = f.data, crc = crc32(data);
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true);
+      h.setUint16(10,tm,true); h.setUint16(12,dt,true); h.setUint32(14,crc,true);
+      h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,nm.length,true); h.setUint16(28,0,true);
+      parts.push(new Uint8Array(h.buffer), nm, data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,0,true);
+      c.setUint16(12,tm,true); c.setUint16(14,dt,true); c.setUint32(16,crc,true);
+      c.setUint32(20,data.length,true); c.setUint32(24,data.length,true); c.setUint16(28,nm.length,true);
+      c.setUint32(42,off,true);
+      central.push(new Uint8Array(c.buffer), nm);
+      off += 30 + nm.length + data.length;
+    });
+    var cdSize = central.reduce(function(a,b){ return a+b.length; },0);
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true);
+    e.setUint32(12,cdSize,true); e.setUint32(16,off,true);
+    return parts.concat(central,[new Uint8Array(e.buffer)]);
+  }
+  function xml(s){ return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function buildXlsx(rows){ // rows: arrays de strings; fila 0 = encabezados
+    var cols = 'ABCD', body = '';
+    rows.forEach(function(r, i){
+      body += '<row r="'+(i+1)+'">';
+      r.forEach(function(v, j){
+        // Todas las celdas son texto (inlineStr): el ID conserva sus ceros sin fórmulas
+        body += '<c r="'+cols[j]+(i+1)+'" t="inlineStr" s="'+(i===0?1:2)+'"><is><t xml:space="preserve">'+xml(v)+'</t></is></c>';
+      });
+      body += '</row>';
+    });
+    var H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    var NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    var RNS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    var PR = 'http://schemas.openxmlformats.org/package/2006/relationships';
+    return zip([
+      {name:'[Content_Types].xml', data:utf8(H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>')},
+      {name:'_rels/.rels', data:utf8(H+'<Relationships xmlns="'+PR+'"><Relationship Id="rId1" Type="'+RNS+'/officeDocument" Target="xl/workbook.xml"/></Relationships>')},
+      {name:'xl/workbook.xml', data:utf8(H+'<workbook xmlns="'+NS+'" xmlns:r="'+RNS+'"><sheets><sheet name="Asistencia" sheetId="1" r:id="rId1"/></sheets></workbook>')},
+      {name:'xl/_rels/workbook.xml.rels', data:utf8(H+'<Relationships xmlns="'+PR+'"><Relationship Id="rId1" Type="'+RNS+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+RNS+'/styles" Target="styles.xml"/></Relationships>')},
+      {name:'xl/styles.xml', data:utf8(H+'<styleSheet xmlns="'+NS+'"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFF5E00"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/><xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>')},
+      {name:'xl/worksheets/sheet1.xml', data:utf8(H+'<worksheet xmlns="'+NS+'"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="32" customWidth="1"/><col min="2" max="2" width="22" customWidth="1"/><col min="3" max="3" width="14" customWidth="1"/><col min="4" max="4" width="12" customWidth="1"/></cols><sheetData>'+body+'</sheetData></worksheet>')}
+    ]);
+  }
+  /*XLSX-END*/
+  function safeName(n){
+    var s = (n || '').trim().replace(/[\\\/:*?"<>|#%]+/g,'').replace(/\s+/g,'_');
+    return s || 'Servicio_Cultural';
+  }
+  $('btnCsv').addEventListener('click', function(){
+    if(!unlocked) return;
+    var recs = getRecs();
+    if(!recs.length){ toast('Sin registros', 'Aún no hay asistencias para exportar.', true, 2000); return; }
+    var rows = [['Evento','Documento / ID','Fecha','Hora']];
+    recs.forEach(function(r){ rows.push([r.evento, String(r.documento), r.fecha, r.hora]); });
+    var name = safeName(getEvent()) + '_' + fmtISO(new Date()) + '.xlsx';
+    var blob = new Blob(buildXlsx(rows), {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+    toast('Descarga iniciada', name, false, 2000);
+  });
+
+  /* ---------- Lista ---------- */
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function renderList(){
+    var recs = getRecs(), tb = $('listBody');
+    $('listSub').textContent = recs.length + (recs.length === 1 ? ' registro' : ' registros') + ' · el más reciente arriba';
+    if(!recs.length){ tb.innerHTML = '<tr><td colspan="6" class="empty">No hay registros todavía.</td></tr>'; return; }
+    var html = '';
+    for(var i = recs.length - 1; i >= 0; i--){
+      var r = recs[i];
+      html += '<tr><td>' + (i+1) + '</td><td>' + esc(r.evento) + '</td><td class="id">' + esc(r.documento) +
+              '</td><td>' + esc(r.fecha) + '</td><td>' + esc(r.hora) +
+              '</td><td><button class="del" data-uid="' + esc(r.uid) + '" aria-label="Eliminar registro">' + ICON_TRASH + '</button></td></tr>';
+    }
+    tb.innerHTML = html;
+  }
+  $('btnList').addEventListener('click', function(){ if(!unlocked) return; renderList(); $('listModal').classList.add('show'); });
+  $('listClose').addEventListener('click', function(){ $('listModal').classList.remove('show'); });
+  $('listBody').addEventListener('click', function(e){
+    var b = e.target.closest('.del'); if(!b) return;
+    var uid = b.dataset.uid;
+    var r = getRecs().filter(function(x){ return x.uid === uid; })[0];
+    if(!r) return;
+    confirmBox('¿Eliminar este registro?', 'Documento ' + r.documento + ' · ' + r.fecha + ' ' + r.hora, 'Sí, eliminar', function(){
+      setRecs(getRecs().filter(function(x){ return x.uid !== uid; }));
+      renderList(); updateCount();
+    });
+  });
+
+  /* ---------- Confirmaciones ---------- */
+  var confCb = null;
+  function confirmBox(title, text, yesLabel, cb){
+    $('confTitle').textContent = title;
+    $('confText').textContent = text;
+    $('confYes').textContent = yesLabel;
+    confCb = cb;
+    $('confModal').classList.add('show');
+  }
+  $('confNo').addEventListener('click', function(){ confCb = null; $('confModal').classList.remove('show'); });
+  $('confYes').addEventListener('click', function(){
+    var cb = confCb; confCb = null; $('confModal').classList.remove('show');
+    if(cb) setTimeout(cb, 60);
+  });
+
+  $('btnClear').addEventListener('click', function(){
+    if(!unlocked) return;
+    var n = getRecs().length;
+    confirmBox('¿Estás seguro de que deseas borrar todos los registros?',
+      'Se eliminarán ' + n + (n === 1 ? ' registro.' : ' registros.') + ' Te recomendamos descargar el Excel (.xlsx) antes.',
+      'Sí, continuar', function(){
+        confirmBox('Confirmación final', 'Esta acción no se puede deshacer. ¿Borrar definitivamente todos los registros?', 'Borrar todo', function(){
+          sDel(K_RECS); updateCount();
+          toast('Registros borrados', 'La lista quedó vacía.', false, 1800);
+        });
+      });
+  });
+
+  /* ---------- Inicio ---------- */
+  renderEvent(); render(); setMode('num'); updateCount(); setUnlocked(false);
+})();
+</script>
+</body>
+</html>
